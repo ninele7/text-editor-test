@@ -1,18 +1,24 @@
 <template>
   <div class="home">
-    <img alt="Vue logo" src="../assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js + TypeScript App"/>
+    <mdEditor class="editor"/>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import HelloWorld from '@/components/HelloWorld.vue' // @ is an alias to /src
+import mdEditor from '../components/mdEditor.vue'
 
 export default defineComponent({
   name: 'Home',
   components: {
-    HelloWorld
+    mdEditor
   }
 })
 </script>
+
+<style lang="scss" scoped>
+.editor {
+  height: 100vh;
+  width: 100vw;
+}
+</style>
