@@ -50,7 +50,10 @@ const replaceWithNodeInputRule = (regexp: RegExp, markType: NodeType, getAttrs? 
       state.schema.node('hiddenLink', attrs, state.schema.text(attrs.href)),
       state.schema.node('hiddenLink', {}, state.schema.text(')'))
     ])
-    return tr.replaceWith(start, end, createdNode)
+    tr.replaceWith(start, end, createdNode)
+    console.log(createdNode)
+    tr.insertText(' ', start + createdNode.nodeSize)
+    return tr
   })
 }
 
@@ -85,7 +88,7 @@ export const mySchema = new Schema({
       }, 0]
     }
   }).addToEnd('hiddenLink', {
-    content: '(text | link)*',
+    content: 'text*',
     group: 'inline',
     inline: true,
     toDOM () {

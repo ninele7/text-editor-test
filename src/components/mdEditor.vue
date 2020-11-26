@@ -24,11 +24,11 @@ import {
 import { buildKeymap } from 'prosemirror-example-setup'
 import { baseKeymap } from 'prosemirror-commands'
 import { Mark } from 'prosemirror-model'
+import disableAllLinks from '@/components/disableAllLinks'
 
 export default {
   setup () {
     const target = ref<HTMLDivElement | null>(null)
-    let lastSelectedNode: ContentNodeWithPos | null = null
     onMounted(() => {
       if (!target.value) return
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -55,6 +55,33 @@ export default {
               }
             }),
             new Plugin({
+              props: {
+                handleTextInput: (view, from, to, text) => {
+                  console.log('here')
+                  const nodeWithPos = findParentNodeOfType(mySchema.nodes.linkContainer)(view.state.selection)
+                  const linkWithPos = findParentNodeOfType(mySchema.nodes.link)(view.state.selection)
+                  if (nodeWithPos) {
+                    if (nodeWithPos.pos === from - 2) {
+                      const tr = view.state.tr
+                      tr.insertText(text, from - 1)
+                      const resolved = tr.doc.resolve(from - 1)
+                      view.dispatch(tr.setSelection(new TextSelection(resolved, resolved)))
+                      return true
+                    }
+                    if (nodeWithPos.pos + nodeWithPos.node.nodeSize === from + 2) {
+                      const tr = view.state.tr
+                      tr.insertText(text, from + 2)
+                      const resolved = tr.doc.resolve(from + 3)
+                      view.dispatch(tr.setSelection(new TextSelection(resolved, resolved)))
+                      return true
+                    }
+                    return false
+                  }
+                  return false
+                }
+              }
+            }),
+            new Plugin({
               view () {
                 return {
                   update (view, prevState) {
@@ -62,19 +89,12 @@ export default {
                     if (prevState && prevState.doc.eq(state.doc) &&
                         prevState.selection.eq(state.selection)) return false
 
-                    const linkWithPos = findParentNodeOfType(mySchema.nodes.link)(view.state.selection)
                     const nodeWithPos = findParentNodeOfType(mySchema.nodes.linkContainer)(view.state.selection)
                     const tr = state.tr
+                    disableAllLinks(tr.doc, tr)
 
-                    if (lastSelectedNode) {
-                      tr.setNodeMarkup(lastSelectedNode.pos, undefined, { displayed: false })
-                    }
-
-                    if (linkWithPos) {
-                      if (nodeWithPos) {
-                        lastSelectedNode = nodeWithPos
-                        tr.setNodeMarkup(nodeWithPos.pos, undefined, { displayed: true })
-                      }
+                    if (nodeWithPos) {
+                      tr.setNodeMarkup(nodeWithPos.pos, undefined, { displayed: true })
                     }
 
                     view.dispatch(tr)
