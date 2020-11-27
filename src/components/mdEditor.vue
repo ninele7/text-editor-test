@@ -6,24 +6,19 @@
 
 <script lang="ts">
 import { onMounted, ref } from 'vue'
-import { EditorState, Plugin, Selection, TextSelection } from 'prosemirror-state'
+import { EditorState, Plugin, TextSelection } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
 import { inputRules } from 'prosemirror-inputrules'
 import { keymap } from 'prosemirror-keymap'
 import createReplaceRules, { mySchema } from '@/components/createReplaceRules'
-import { getMarkAttrs, getMarkRange } from '@/components/getMarksAttrs'
-import { findParentNodeOfType, ContentNodeWithPos } from 'prosemirror-utils'
+import { getMarkAttrs } from '@/components/getMarksAttrs'
+import { findParentNodeOfType } from 'prosemirror-utils'
 // import { schema } from 'prosemirror-schema-basic'
-import {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-  // @ts-ignore
-  schema
-} from 'prosemirror-markdown'
 // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
 // @ts-ignore
 import { buildKeymap } from 'prosemirror-example-setup'
 import { baseKeymap } from 'prosemirror-commands'
-import { Mark } from 'prosemirror-model'
+import { Schema } from 'prosemirror-model'
 import disableAllLinks from '@/components/disableAllLinks'
 
 export default {
@@ -31,29 +26,28 @@ export default {
     const target = ref<HTMLDivElement | null>(null)
     onMounted(() => {
       if (!target.value) return
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const view = new EditorView(target.value, {
         state: EditorState.create({
           schema: mySchema,
           plugins: [
             inputRules({ rules: createReplaceRules() }),
-            keymap(buildKeymap(schema, true)),
             keymap(baseKeymap),
-            new Plugin({
-              props: {
-                handleClick: (view, pos, event) => {
-                  const { schema } = view.state
-                  const attrs = getMarkAttrs(view.state, schema.marks.link)
+            keymap(buildKeymap(mySchema, true)),
+            // new Plugin({
+            //   props: {
+            //     handleClick: (view, pos, event) => {
+            //       const { schema } = view.state
+            //       const attrs = getMarkAttrs(view.state, schema.marks.link)
 
-                  if (attrs.href && event.target instanceof HTMLAnchorElement && event.ctrlKey) {
-                    event.stopPropagation()
-                    window.open(attrs.href, attrs.target)
-                  }
+            //       if (attrs.href && event.target instanceof HTMLAnchorElement && event.ctrlKey) {
+            //         event.stopPropagation()
+            //         window.open(attrs.href, attrs.target)
+            //       }
 
-                  return false
-                }
-              }
-            }),
+            //       return false
+            //     }
+            //   }
+            // }),
             new Plugin({
               props: {
                 handleTextInput: (view, from, to, text) => {
@@ -107,6 +101,24 @@ export default {
           ]
         })
       })
+      const attrs = {
+        href: 'test',
+        title: 'test'
+      }
+      const tr = view.state.tr
+      const schema: Schema = view.state.schema
+      const createdNode = schema.node('linkContainer', {}, [
+        schema.node('hiddenLink', {}, schema.text('[')),
+        schema.node('link', attrs, schema.text(attrs.title)),
+        schema.node('hiddenLink', {}, schema.text(']')),
+        schema.node('hiddenLink', {}, schema.text('(')),
+        schema.node('hiddenLink', {}, schema.text(attrs.href)),
+        schema.node('hiddenLink', {}, schema.text(')'))
+      ])
+      tr.replaceWith(1, 1, createdNode)
+      console.log(createdNode)
+      tr.insertText(' ', 1 + createdNode.nodeSize)
+      view.dispatch(tr)
     })
     return {
       target
@@ -132,10 +144,14 @@ h1 {
 }
 
 .link-container > .hidden-link {
-  display: none;
+  display: inline;
+  opacity: 0%;
+  font-size: 0;
 }
 
 .link-container-displayed > .hidden-link {
   display: inline;
+  opacity: 100%;
+  font-size: 16px;
 }
 </style>
