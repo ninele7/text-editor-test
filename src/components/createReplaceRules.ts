@@ -5,27 +5,27 @@ import { schema } from 'prosemirror-markdown'
 import { Mark, MarkType, NodeType, Node, Schema } from 'prosemirror-model'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const markInputRule = (regexp: RegExp, markType: MarkType, getAttrs?: Function) => {
-  const newRegexp = new RegExp(regexp.source.replace(/\$$/, '') + '(.)' + '$')
+// const markInputRule = (regexp: RegExp, markType: MarkType, getAttrs?: Function) => {
+//   const newRegexp = new RegExp(regexp.source.replace(/\$$/, '') + '(.)' + '$')
 
-  return new InputRule(newRegexp, (state, match, start, end) => {
-    const attrs = getAttrs instanceof Function ? getAttrs(match) : getAttrs
-    const textStart = start + match[0].indexOf(match[1])
-    const textEnd = textStart + match[1].length
-    const tr = state.tr
+//   return new InputRule(newRegexp, (state, match, start, end) => {
+//     const attrs = getAttrs instanceof Function ? getAttrs(match) : getAttrs
+//     const textStart = start + match[0].indexOf(match[1])
+//     const textEnd = textStart + match[1].length
+//     const tr = state.tr
 
-    start = (match[0].match(/^\s/)) ? start + 1 : start
+//     start = (match[0].match(/^\s/)) ? start + 1 : start
 
-    if (textEnd < end) tr.delete(textEnd, end)
-    if (textStart > start) tr.delete(start, textStart)
+//     if (textEnd < end) tr.delete(textEnd, end)
+//     if (textStart > start) tr.delete(start, textStart)
 
-    end = start + match[1].length
+//     end = start + match[1].length
 
-    return tr
-      .addMark(start, end, markType.create(attrs))
-      .insert(end, schema.text(match[2]))
-  })
-}
+//     return tr
+//       .addMark(start, end, markType.create(attrs))
+//       .insert(end, schema.text(match[2]))
+//   })
+// }
 
 const replaceWithNodeInputRule = (regexp: RegExp, markType: NodeType, getAttrs? : Function) => {
   const newRegexp = new RegExp(regexp.source.replace(/\$$/, '') + '(.)' + '$')
@@ -49,6 +49,33 @@ const replaceWithNodeInputRule = (regexp: RegExp, markType: NodeType, getAttrs? 
       state.schema.node('hiddenLink', {}, state.schema.text('(')),
       state.schema.node('hiddenLink', attrs, state.schema.text(attrs.href)),
       state.schema.node('hiddenLink', {}, state.schema.text(')'))
+    ])
+    tr.replaceWith(start, end, createdNode)
+    console.log(createdNode)
+    tr.insertText(' ', start + createdNode.nodeSize)
+    return tr
+  })
+}
+
+const replaceWithNodeInputRuleBold = (regexp: RegExp, markType: NodeType, getAttrs? : Function) => {
+  const newRegexp = new RegExp(regexp.source.replace(/\$$/, '') + '(.)' + '$')
+
+  return new InputRule(newRegexp, (state, match, start, end) => {
+    const attrs = getAttrs instanceof Function ? getAttrs(match) : getAttrs
+    const textStart = start + match[0].indexOf(match[1])
+    const textEnd = textStart + match[1].length
+    const tr = state.tr
+
+    start = (match[0].match(/^\s/)) ? start + 1 : start
+
+    if (textEnd < end) tr.delete(textEnd, end)
+    if (textStart > start) tr.delete(start, textStart)
+
+    end = start + match[1].length
+    const createdNode = state.schema.node('boldContainer', {}, [
+      state.schema.node('hidden', {}, state.schema.text('**')),
+      state.schema.node('boldText', attrs, state.schema.text(attrs.text)),
+      state.schema.node('hidden', {}, state.schema.text('**'))
     ])
     tr.replaceWith(start, end, createdNode)
     console.log(createdNode)
@@ -94,18 +121,53 @@ export const mySchema = new Schema({
     toDOM () {
       return ['span', { class: 'hidden-link' }, 0]
     }
+  }).addToEnd('hidden', {
+    content: 'text*',
+    group: 'inline',
+    inline: true,
+    toDOM () {
+      return ['span', { class: 'hidden' }, 0]
+    }
+  }).addToEnd('boldText', {
+    content: 'text*',
+    group: 'inline',
+    inline: true,
+    toDOM () {
+      return ['span', { class: 'bold-text' }, 0]
+    }
+  }).addToEnd('boldContainer', {
+    attrs: { displayed: { default: false } },
+    content: '(hidden | boldText)*',
+    group: 'inline',
+    inline: true,
+    toDOM (node: Node) {
+      return ['span', {
+        class: 'bold-container' + (node.attrs.displayed ? ' bold-container-displayed' : '')
+      }, 0]
+    }
   }),
   marks: schema.spec.marks.remove('link')
 })
 
 export default () => {
-  rules.push(markInputRule(/(?:\*\*|__)([^*_]+)(?:\*\*|__)$/, schema.marks.strong))
-  rules.push(replaceWithNodeInputRule(/\[(.*)\]\(.*\)/, mySchema.nodes.link, (match: RegExpMatchArray) => {
-    const matches = match[0].match(/\[(.*)\]\((.*)\)/)
-    return {
-      title: matches ? matches[1] : '',
-      href: matches ? matches[2] : ''
-    }
-  }))
+  rules.push(
+    replaceWithNodeInputRule(/\[(.*)\]\(.*\)/, mySchema.nodes.link, (match: RegExpMatchArray) => {
+      const matches = match[0].match(/\[(.*)\]\((.*)\)/)
+      console.log('replaceWithNodeInputRule matches', matches)
+      return {
+        title: matches ? matches[1] : '',
+        href: matches ? matches[2] : ''
+      }
+    }),
+    replaceWithNodeInputRuleBold(/(\*\*)(.+)(\*\*)/, mySchema.nodes.bold, (match: RegExpMatchArray) => {
+      const matches = match[0].match(/(\*\*)(.+)(\*\*)/)
+      console.log('replaceWithNodeInputRuleBold matches', matches)
+      return {
+        openingSign: matches ? matches[1] : '',
+        text: matches ? matches[2] : '',
+        closingSign: matches ? matches[3] : ''
+      }
+    })
+  )
   return rules
 }

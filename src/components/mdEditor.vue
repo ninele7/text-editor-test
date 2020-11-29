@@ -1,6 +1,8 @@
 <template>
   <div>
+    <input type="button" value="Click Me" @click="buttonClickHandler" >
     <div ref="target" class="mdEditor"/>
+
   </div>
 </template>
 
@@ -19,11 +21,13 @@ import { findParentNodeOfType } from 'prosemirror-utils'
 import { buildKeymap } from 'prosemirror-example-setup'
 import { baseKeymap } from 'prosemirror-commands'
 import { Schema } from 'prosemirror-model'
-import disableAllLinks from '@/components/disableAllLinks'
+import disableAll from '@/components/disableAllLinks'
 
 export default {
   setup () {
     const target = ref<HTMLDivElement | null>(null)
+    // let viewToGlobalContext = null
+
     onMounted(() => {
       if (!target.value) return
       const view = new EditorView(target.value, {
@@ -51,8 +55,9 @@ export default {
             new Plugin({
               props: {
                 handleTextInput: (view, from, to, text) => {
-                  console.log('here')
-                  const nodeWithPos = findParentNodeOfType(mySchema.nodes.linkContainer)(view.state.selection)
+                  console.log(`from ${from} to ${to} text: ${text}`)
+                  let nodeWithPos = findParentNodeOfType(mySchema.nodes.linkContainer)(view.state.selection)
+                  console.log(nodeWithPos)
                   const linkWithPos = findParentNodeOfType(mySchema.nodes.link)(view.state.selection)
                   if (nodeWithPos) {
                     if (nodeWithPos.pos === from - 2) {
@@ -71,6 +76,11 @@ export default {
                     }
                     return false
                   }
+
+                  nodeWithPos = findParentNodeOfType(mySchema.nodes.boldContainer)(view.state.selection)
+                  if (nodeWithPos) {
+                    console.log('handle text input in bold')
+                  }
                   return false
                 }
               }
@@ -83,12 +93,18 @@ export default {
                     if (prevState && prevState.doc.eq(state.doc) &&
                         prevState.selection.eq(state.selection)) return false
 
-                    const nodeWithPos = findParentNodeOfType(mySchema.nodes.linkContainer)(view.state.selection)
+                    console.log('update')
+                    let nodeWithPos = findParentNodeOfType(mySchema.nodes.linkContainer)(view.state.selection)
                     const tr = state.tr
-                    disableAllLinks(tr.doc, tr)
+                    disableAll(tr.doc, tr)
 
                     if (nodeWithPos) {
                       tr.setNodeMarkup(nodeWithPos.pos, undefined, { displayed: true })
+                    } else {
+                      nodeWithPos = findParentNodeOfType(mySchema.nodes.boldContainer)(view.state.selection)
+                      if (nodeWithPos) {
+                        tr.setNodeMarkup(nodeWithPos.pos, undefined, { displayed: true })
+                      }
                     }
 
                     view.dispatch(tr)
@@ -101,10 +117,12 @@ export default {
           ]
         })
       })
+
       const attrs = {
         href: 'test',
         title: 'test'
       }
+      // viewToGlobalContext = view
       const tr = view.state.tr
       const schema: Schema = view.state.schema
       const createdNode = schema.node('linkContainer', {}, [
@@ -120,8 +138,14 @@ export default {
       tr.insertText(' ', 1 + createdNode.nodeSize)
       view.dispatch(tr)
     })
+
+    const buttonClickHandler = () => {
+      // console.log(viewToGlobalContext)
+    }
+
     return {
-      target
+      target,
+      buttonClickHandler
     }
   }
 }
@@ -154,4 +178,21 @@ h1 {
   opacity: 100%;
   font-size: 16px;
 }
+
+.bold-container > .hidden {
+  display: inline;
+  opacity: 0%;
+  font-size: 0;
+}
+
+.bold-container-displayed > .hidden {
+  display: inline;
+  opacity: 100%;
+  font-size: 16px;
+}
+
+.bold-text{
+  font-weight: bold;
+}
+
 </style>
