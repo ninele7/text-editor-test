@@ -80,6 +80,21 @@ export default {
                   nodeWithPos = findParentNodeOfType(mySchema.nodes.boldContainer)(view.state.selection)
                   if (nodeWithPos) {
                     console.log('handle text input in bold')
+                    if (nodeWithPos.pos === from - 2) {
+                      const tr = view.state.tr
+                      tr.insertText(text, from - 1)
+                      const resolved = tr.doc.resolve(from - 1)
+                      view.dispatch(tr.setSelection(new TextSelection(resolved, resolved)))
+                      return true
+                    }
+                    if (nodeWithPos.pos + nodeWithPos.node.nodeSize === from + 2) {
+                      const tr = view.state.tr
+                      tr.insertText(text, from + 2)
+                      const resolved = tr.doc.resolve(from + 3)
+                      view.dispatch(tr.setSelection(new TextSelection(resolved, resolved)))
+                      return true
+                    }
+                    return false
                   }
                   return false
                 }
@@ -104,6 +119,10 @@ export default {
                       nodeWithPos = findParentNodeOfType(mySchema.nodes.boldContainer)(view.state.selection)
                       if (nodeWithPos) {
                         tr.setNodeMarkup(nodeWithPos.pos, undefined, { displayed: true })
+                        const boldWithPos = findParentNodeOfType(mySchema.nodes.boldText)(view.state.selection)
+                        if (boldWithPos) {
+                          console.log('boldWithPos ', boldWithPos)
+                        }
                       }
                     }
 
@@ -191,8 +210,12 @@ h1 {
   font-size: 16px;
 }
 
-.bold-text{
+.bold-container > .bold-text{
   font-weight: bold;
+}
+
+.bold-container-displayed > .bold-text{
+  font-weight: normal;
 }
 
 </style>
