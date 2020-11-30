@@ -132,7 +132,7 @@ export default {
                     const state = view.state
                     if (prevState && prevState.doc.eq(state.doc) &&
                         prevState.selection.eq(state.selection)) return false
-                    // console.log('update')
+                    console.log('update')
                     let nodeWithPos = findParentNodeOfType(mySchema.nodes.linkContainer)(view.state.selection)
                     const tr = state.tr
                     disableAll(tr.doc, tr)
@@ -149,6 +149,23 @@ export default {
                         }
                       }
                     }
+
+                    let matches = view.state.doc.textContent.matchAll(/(\*\*)(.+)(\*\*)/gi)
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+                    // @ts-ignore
+                    matches = Array.from(matches)
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+                    // @ts-ignore
+                    matches.forEach(element => {
+                      console.log(element)
+                      tr.replaceWith(element.index, element.index + element[0].length + 1, mySchema.node('boldContainer', {}, [
+                        mySchema.node('hidden', {}, mySchema.text('**')),
+                        mySchema.node('boldText', { text: element[2] }, mySchema.text(element[2])),
+                        mySchema.node('hidden', {}, mySchema.text('**'))
+                      ]))
+                    })
+
+                    // console.log('before dispatch')
 
                     view.dispatch(tr)
 
@@ -176,17 +193,17 @@ export default {
       //   schema.node('hiddenLink', {}, schema.text(attrs.href)),
       //   schema.node('hiddenLink', {}, schema.text(')'))
       // ])
-      const attrs = {
-        text: 'test'
-      }
-      const createdNode = schema.node('boldContainer', {}, [
-        schema.node('hidden', {}, schema.text('**')),
-        schema.node('boldText', attrs, schema.text(attrs.text)),
-        schema.node('hidden', {}, schema.text('**'))
-      ])
-      tr.replaceWith(1, 1, createdNode)
-      console.log(createdNode)
-      tr.insertText(' ', 1 + createdNode.nodeSize)
+      // const attrs = {
+      //   text: 'test'
+      // }
+      // const createdNode = schema.node('boldContainer', {}, [
+      //   schema.node('hidden', {}, schema.text('**')),
+      //   schema.node('boldText', attrs, schema.text(attrs.text)),
+      //   schema.node('hidden', {}, schema.text('**'))
+      // ])
+      // tr.replaceWith(1, 1, createdNode)
+      // console.log(createdNode)
+      // tr.insertText(' ', 1 + createdNode.nodeSize)
       view.dispatch(tr)
     })
 

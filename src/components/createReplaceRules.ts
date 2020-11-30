@@ -158,16 +158,16 @@ export default () => {
         title: matches ? matches[1] : '',
         href: matches ? matches[2] : ''
       }
-    }),
-    replaceWithNodeInputRuleBold(/(\*\*)(.+)(\*\*)/, mySchema.nodes.bold, (match: RegExpMatchArray) => {
-      const matches = match[0].match(/(\*\*)(.+)(\*\*)/)
-      console.log('replaceWithNodeInputRuleBold matches', matches)
-      return {
-        openingSign: matches ? matches[1] : '',
-        text: matches ? matches[2] : '',
-        closingSign: matches ? matches[3] : ''
-      }
     })
+    // replaceWithNodeInputRuleBold(/(\*\*)(.+)(\*\*)/, mySchema.nodes.bold, (match: RegExpMatchArray) => {
+    //   const matches = match[0].match(/(\*\*)(.+)(\*\*)/)
+    //   console.log('replaceWithNodeInputRuleBold matches', matches)
+    //   return {
+    //     openingSign: matches ? matches[1] : '',
+    //     text: matches ? matches[2] : '',
+    //     closingSign: matches ? matches[3] : ''
+    //   }
+    // })
   )
   return rules
 }
