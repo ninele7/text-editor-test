@@ -89,6 +89,20 @@ export default {
                       view.dispatch(tr.setSelection(new TextSelection(resolved, resolved)))
                       return true
                     }
+
+                    if (nodeWithPos.pos === from - 3) {
+                      console.log(`nodeWithPos.pos (${nodeWithPos.pos}) === from (${from}) - 3 (into opening asterix)`)
+                      console.log('nodeWithPos', nodeWithPos)
+                      const tr = view.state.tr
+                      const schema: Schema = view.state.schema
+                      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+                      // @ts-ignore
+                      tr.replaceWith(nodeWithPos.pos, nodeWithPos.pos + nodeWithPos.node.nodeSize, schema.text(nodeWithPos.node.content.content[1].textContent))
+                      // tr.insertText(text, from + 2)
+                      const resolved = tr.doc.resolve(from - 1)
+                      view.dispatch(tr.setSelection(new TextSelection(resolved, resolved)))
+                      return true
+                    }
                     if (nodeWithPos.pos === from - 4) {
                       console.log(`nodeWithPos.pos (${nodeWithPos.pos}) === from (${from}) - 4`)
                       const tr = view.state.tr
