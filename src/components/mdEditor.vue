@@ -55,7 +55,7 @@ export default {
             new Plugin({
               props: {
                 handleTextInput: (view, from, to, text) => {
-                  console.log(`from ${from} to ${to} text: ${text}`)
+                  console.log(`handleTextInput from ${from} to ${to} text: ${text}`)
                   let nodeWithPos = findParentNodeOfType(mySchema.nodes.linkContainer)(view.state.selection)
                   console.log(nodeWithPos)
                   const linkWithPos = findParentNodeOfType(mySchema.nodes.link)(view.state.selection)
@@ -79,15 +79,26 @@ export default {
 
                   nodeWithPos = findParentNodeOfType(mySchema.nodes.boldContainer)(view.state.selection)
                   if (nodeWithPos) {
-                    console.log('handle text input in bold')
+                    console.log('handle text input in bold. nodeWithPos: ', nodeWithPos)
+                    console.log(`from (${from}) - nodeWithPos.pos (${nodeWithPos.pos}) = `, from - nodeWithPos.pos)
                     if (nodeWithPos.pos === from - 2) {
+                      console.log(`nodeWithPos.pos (${nodeWithPos.pos}) === from (${from}) - 2`)
                       const tr = view.state.tr
                       tr.insertText(text, from - 1)
                       const resolved = tr.doc.resolve(from - 1)
                       view.dispatch(tr.setSelection(new TextSelection(resolved, resolved)))
                       return true
                     }
+                    if (nodeWithPos.pos === from - 4) {
+                      console.log(`nodeWithPos.pos (${nodeWithPos.pos}) === from (${from}) - 4`)
+                      const tr = view.state.tr
+                      tr.insertText(text, from + 2)
+                      const resolved = tr.doc.resolve(from + 3)
+                      view.dispatch(tr.setSelection(new TextSelection(resolved, resolved)))
+                      return true
+                    }
                     if (nodeWithPos.pos + nodeWithPos.node.nodeSize === from + 2) {
+                      console.log(`nodeWithPos.pos (${nodeWithPos.pos}) + nodeWithPos.node.nodeSize (${nodeWithPos.node.nodeSize}) === from (${from}) + 2`)
                       const tr = view.state.tr
                       tr.insertText(text, from + 2)
                       const resolved = tr.doc.resolve(from + 3)
@@ -107,8 +118,7 @@ export default {
                     const state = view.state
                     if (prevState && prevState.doc.eq(state.doc) &&
                         prevState.selection.eq(state.selection)) return false
-
-                    console.log('update')
+                    // console.log('update')
                     let nodeWithPos = findParentNodeOfType(mySchema.nodes.linkContainer)(view.state.selection)
                     const tr = state.tr
                     disableAll(tr.doc, tr)
@@ -121,7 +131,7 @@ export default {
                         tr.setNodeMarkup(nodeWithPos.pos, undefined, { displayed: true })
                         const boldWithPos = findParentNodeOfType(mySchema.nodes.boldText)(view.state.selection)
                         if (boldWithPos) {
-                          console.log('boldWithPos ', boldWithPos)
+                          // console.log('boldWithPos ', boldWithPos)
                         }
                       }
                     }
@@ -137,20 +147,28 @@ export default {
         })
       })
 
-      const attrs = {
-        href: 'test',
-        title: 'test'
-      }
+      // const attrs = {
+      //   href: 'test',
+      //   title: 'test'
+      // }
       // viewToGlobalContext = view
       const tr = view.state.tr
       const schema: Schema = view.state.schema
-      const createdNode = schema.node('linkContainer', {}, [
-        schema.node('hiddenLink', {}, schema.text('[')),
-        schema.node('link', attrs, schema.text(attrs.title)),
-        schema.node('hiddenLink', {}, schema.text(']')),
-        schema.node('hiddenLink', {}, schema.text('(')),
-        schema.node('hiddenLink', {}, schema.text(attrs.href)),
-        schema.node('hiddenLink', {}, schema.text(')'))
+      // const createdNode = schema.node('linkContainer', {}, [
+      //   schema.node('hiddenLink', {}, schema.text('[')),
+      //   schema.node('link', attrs, schema.text(attrs.title)),
+      //   schema.node('hiddenLink', {}, schema.text(']')),
+      //   schema.node('hiddenLink', {}, schema.text('(')),
+      //   schema.node('hiddenLink', {}, schema.text(attrs.href)),
+      //   schema.node('hiddenLink', {}, schema.text(')'))
+      // ])
+      const attrs = {
+        text: 'test'
+      }
+      const createdNode = schema.node('boldContainer', {}, [
+        schema.node('hidden', {}, schema.text('**')),
+        schema.node('boldText', attrs, schema.text(attrs.text)),
+        schema.node('hidden', {}, schema.text('**'))
       ])
       tr.replaceWith(1, 1, createdNode)
       console.log(createdNode)
