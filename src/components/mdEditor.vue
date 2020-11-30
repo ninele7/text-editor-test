@@ -97,8 +97,8 @@ export default {
                       const schema: Schema = view.state.schema
                       // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
                       // @ts-ignore
-                      tr.replaceWith(nodeWithPos.pos, nodeWithPos.pos + nodeWithPos.node.nodeSize, schema.text(nodeWithPos.node.content.content[1].textContent))
-                      // tr.insertText(text, from + 2)
+                      tr.replaceWith(nodeWithPos.pos, nodeWithPos.pos + nodeWithPos.node.nodeSize, schema.text(nodeWithPos.node.content.content[0].textContent + nodeWithPos.node.content.content[1].textContent + nodeWithPos.node.content.content[2].textContent))
+                      tr.insertText(text, nodeWithPos.pos + 1)
                       const resolved = tr.doc.resolve(from - 1)
                       view.dispatch(tr.setSelection(new TextSelection(resolved, resolved)))
                       return true
