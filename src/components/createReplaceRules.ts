@@ -92,7 +92,7 @@ export const rules: InputRule[] = []
 //   elem.href = node.attrs.href
 //   return elem
 // }
-console.log(schema.spec.nodes)
+// console.log(schema.spec.nodes)
 // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
 // @ts-ignore
 export const mySchema = new Schema({

@@ -8,13 +8,13 @@
 
 <script lang="ts">
 import { onMounted, ref } from 'vue'
-import { EditorState, Plugin, TextSelection } from 'prosemirror-state'
+import { EditorState, Plugin, TextSelection, Selection } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
 import { inputRules } from 'prosemirror-inputrules'
 import { keymap } from 'prosemirror-keymap'
 import createReplaceRules, { mySchema } from '@/components/createReplaceRules'
 import { getMarkAttrs } from '@/components/getMarksAttrs'
-import { findParentNodeOfType } from 'prosemirror-utils'
+import { findParentNode, findParentNodeClosestToPos, findParentNodeOfType } from 'prosemirror-utils'
 // import { schema } from 'prosemirror-schema-basic'
 // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
 // @ts-ignore
@@ -30,6 +30,7 @@ export default {
 
     onMounted(() => {
       if (!target.value) return
+      // let triggeredByRegex = false
       const view = new EditorView(target.value, {
         state: EditorState.create({
           schema: mySchema,
@@ -57,9 +58,10 @@ export default {
                 handleTextInput: (view, from, to, text) => {
                   console.log(`handleTextInput from ${from} to ${to} text: ${text}`)
                   let nodeWithPos = findParentNodeOfType(mySchema.nodes.linkContainer)(view.state.selection)
-                  console.log(nodeWithPos)
+
                   const linkWithPos = findParentNodeOfType(mySchema.nodes.link)(view.state.selection)
                   if (nodeWithPos) {
+                    console.log('handle text input in link. nodeWithPos: ', nodeWithPos)
                     if (nodeWithPos.pos === from - 2) {
                       const tr = view.state.tr
                       tr.insertText(text, from - 1)
@@ -129,10 +131,11 @@ export default {
               view () {
                 return {
                   update (view, prevState) {
+                    // let posToSelect = -1
                     const state = view.state
                     if (prevState && prevState.doc.eq(state.doc) &&
                         prevState.selection.eq(state.selection)) return false
-                    console.log('update')
+                    console.log('update', state.selection.anchor)
                     let nodeWithPos = findParentNodeOfType(mySchema.nodes.linkContainer)(view.state.selection)
                     const tr = state.tr
                     disableAll(tr.doc, tr)
@@ -142,6 +145,7 @@ export default {
                     } else {
                       nodeWithPos = findParentNodeOfType(mySchema.nodes.boldContainer)(view.state.selection)
                       if (nodeWithPos) {
+                        // console.log('displayed true', nodeWithPos.pos)
                         tr.setNodeMarkup(nodeWithPos.pos, undefined, { displayed: true })
                         const boldWithPos = findParentNodeOfType(mySchema.nodes.boldText)(view.state.selection)
                         if (boldWithPos) {
@@ -150,22 +154,51 @@ export default {
                       }
                     }
 
-                    let matches = view.state.doc.textContent.matchAll(/(\*\*)(.+)(\*\*)/gi)
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                    // @ts-ignore
-                    matches = Array.from(matches)
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                    // @ts-ignore
-                    matches.forEach(element => {
-                      console.log(element)
-                      tr.replaceWith(element.index, element.index + element[0].length + 1, mySchema.node('boldContainer', {}, [
-                        mySchema.node('hidden', {}, mySchema.text('**')),
-                        mySchema.node('boldText', { text: element[2] }, mySchema.text(element[2])),
-                        mySchema.node('hidden', {}, mySchema.text('**'))
-                      ]))
-                    })
+                    // https://discuss.prosemirror.net/t/how-to-find-node-by-position-not-selection-in-update-handler/3312
 
-                    // console.log('before dispatch')
+                    // if (triggeredByRegex === false) {
+                    view.state.doc.descendants((node, pos) => {
+                      if (node.type.name === 'text') {
+                        nodeWithPos = findParentNodeOfType(mySchema.nodes.boldContainer)(TextSelection.create(view.state.doc, pos, pos))
+
+                        // console.log(node)
+                        if (!nodeWithPos) {
+                          // console.log('!nodeWithPos ', node.textContent, pos)
+                          let matches = node.textContent.matchAll(/(\*\*)(.+)(\*\*)/gi)
+                          // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+                          // @ts-ignore
+                          matches = Array.from(matches)
+                          // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+                          // @ts-ignore
+                          matches.forEach(element => {
+                            // console.log(`element ${element}`)
+                            const newNode = mySchema.node('boldContainer', {}, [
+                              mySchema.node('hidden', {}, mySchema.text('**')),
+                              mySchema.node('boldText', { text: element[2] }, mySchema.text(element[2])),
+                              mySchema.node('hidden', {}, mySchema.text('**'))
+                            ])
+                            tr.replaceWith(pos + element.index, pos + element.index + element[0].length, newNode)
+
+                            // const resolved = tr.doc.resolve(tr.doc.content.size)
+                            // const selection = new Selection(resolved, resolved)
+                            // tr.setSelection(selection)
+                            // console.log(`set selection to creating node ${selection.anchor} (size before resolving: ${tr.doc.content.size})`)
+                          })
+                        }
+                      }
+                    })
+                    //   triggeredByRegex = true
+                    // } else {
+                    //   triggeredByRegex = false
+                    // }
+                    // if (posToSelect > -1) {
+                    //   // posToSelect = 0
+                    //   const resolved = tr.doc.resolve(posToSelect)
+                    //   console.log('posToSelect ', posToSelect, 'resolved ', resolved)
+                    //   view.dispatch(tr.setSelection(new TextSelection(resolved, resolved)))
+                    // } else {
+                    //   view.dispatch(tr)
+                    // }
 
                     view.dispatch(tr)
 
@@ -202,7 +235,7 @@ export default {
       //   schema.node('hidden', {}, schema.text('**'))
       // ])
       // tr.replaceWith(1, 1, createdNode)
-      // console.log(createdNode)
+      // // console.log(createdNode)
       // tr.insertText(' ', 1 + createdNode.nodeSize)
       view.dispatch(tr)
     })
