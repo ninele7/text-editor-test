@@ -6,7 +6,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import mdEditor from '../components/mdEditor.vue'
+import mdEditor from '../components/codemirror/mdEditor.vue'
 
 export default defineComponent({
   name: 'Home',
